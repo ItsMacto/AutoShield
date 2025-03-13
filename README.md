@@ -2,6 +2,7 @@
 
 Idea for set up:
 
+```
 AutoShield/
 ├── README.md
 ├── setup.py
@@ -28,5 +29,4 @@ AutoShield/
 └── scripts/
     ├── install_service.sh
     └── AutoShield.service
-
-
+```
