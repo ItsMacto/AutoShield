@@ -57,36 +57,57 @@ class Blocks:
         
     def add_block(self, ip: str, rule_name: str, duration: int):
         """
-        Add a block record to the database
+        Add a block record to the database. If IP is already blocked with a 
+        longer duration, keeps the existing block
         
         Args:
-            ip: IP address that was blocked
+            ip: IP address to block
             rule_name: Name of the rule that triggered the block
             duration: Duration of the block in seconds
+            
+        Returns:
+            ID of the new or existing block
         """
         try:
             cursor = self.conn.cursor()
             
-            # calculate unblock time
-            unblock_time = datetime.now().timestamp() + duration
+            # calculate unblock time for new block
+            new_unblock_time = datetime.now().timestamp() + duration
+            block_id = None
             
-            # mark any existing blocks for this IP as inactive
+            # check if there's an existing active block for this IP
             cursor.execute(
-                'UPDATE blocks SET is_blocked = 0 WHERE ip = ? AND is_blocked = 1',
+                'SELECT id, unblock_time FROM blocks WHERE ip = ? AND is_blocked = 1',
                 (ip,)
             )
+            existing_block = cursor.fetchone()
+            
+            if existing_block:
+                # if existing block has longer duration, keep it
+                if existing_block['unblock_time'] > new_unblock_time:
+                    self.logger.info(f"IP {ip} already has a longer block, keeping existing block")
+                    return existing_block['id']
+                else:
+                    # mark existing block as inactive since we'll create a new one with longer duration
+                    cursor.execute(
+                        'UPDATE blocks SET is_blocked = 0 WHERE ip = ? AND is_blocked = 1',
+                        (ip,)
+                    )
             
             # add the new block
             cursor.execute(
                 'INSERT INTO blocks (ip, rule_name, duration, is_blocked, unblock_time) VALUES (?, ?, ?, 1, ?)',
-                (ip, rule_name, duration, unblock_time)
+                (ip, rule_name, duration, new_unblock_time)
             )
             
+            block_id = cursor.lastrowid
             self.conn.commit()
+            return block_id
             
         except Exception as e:
             self.logger.error(f"Error adding block record: {str(e)}")
             self.conn.rollback()
+            return None
     
     def mark_unblocked(self, ip: str):
         """
