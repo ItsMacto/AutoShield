@@ -94,6 +94,28 @@ class BlockHistory:
         except Exception as e:
             self.logger.error(f"Error getting block records: {str(e)}")
             return []
+        
+    def get_current_blocks(self) -> list:
+        """
+        Get currently blocked IPs based on the duration and timestamp
+        
+        Returns:
+            List of currently blocked IPs
+        """
+        try:
+            cursor = self.conn.cursor()
+
+            cursor.execute('''
+            SELECT * FROM blocks 
+            WHERE datetime(timestamp, '+' || duration || ' seconds') > datetime('now')
+            ORDER BY timestamp DESC
+            ''')
+            
+            return cursor.fetchall()
+            
+        except Exception as e:
+            self.logger.error(f"Error getting current blocks: {str(e)}")
+            return []
             
     def get_stats(self) -> dict:
         """
