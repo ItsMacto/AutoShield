@@ -21,7 +21,7 @@ AutoShield/
 │   ├── firewall/
 │   │   ├── nftables_manager.py
 │   │   └── other like iptables if needed 
-│   ├── storage/
+│   ├── database/
 │   │   ├── __init__.py
 │   │   └── db.py
 │   └── service.py
