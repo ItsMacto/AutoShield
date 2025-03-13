@@ -1,3 +1,6 @@
+# TODO: check python location and config
+# NOTE: If there are more permission check here 
+
 [Unit]
 Description=AutoShield Service
 After=network.target
