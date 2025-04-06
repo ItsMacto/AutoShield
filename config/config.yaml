@@ -1,0 +1,42 @@
+# AutoShield Configuration
+
+# Monitoring settings
+monitoring:
+  # Keywords to match in the journal
+  keywords:
+    - "Failed password"
+  # Journal identifiers to filter by
+  syslog_identifiers:
+    - "sshd"
+
+# Rules  settings
+rules:
+  # Number of failed attempts before blocking
+  threshold: 5
+  # Time window in minutes to consider for threshold
+  time_window: 10
+
+
+# Firewall settings
+firewall:
+  # Block duration in minutes
+  block_duration: 60
+  # Increase block duration by this factor for each previous block
+  block_duration_multiplier: 2
+  # Maximum block duration in minutes
+  max_block_duration: 4,320  # 72 hours
+  # Whitelisted IP's that wont be blocked
+  whitelist:
+    - "127.0.0.1" # Local host
+    - "192.168.1.1" # Default private network
+
+# Database settings
+database:
+  path: "/var/lib/autoshield/database.db"
+
+# Logging settings
+logging:
+  # Log file path
+  file_path: "/var/log/autoshield.log"
+  # Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  level: "INFO"
