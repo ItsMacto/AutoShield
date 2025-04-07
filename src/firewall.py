@@ -13,7 +13,8 @@ class Firewall:
         """
         self.config = config
         self.logger = logger
-        self.whitelist = set(config['firewall'].get('whitelist',[]))
+        # self.whitelist = set(config['firewall'].get('whitelist',[]))
+        self.whitelist = set(config.get('firewall', {}).get('whitelist') or [])
         
 
         self._initialize_nftables()
