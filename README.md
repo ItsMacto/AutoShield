@@ -55,27 +55,12 @@ To run AutoShield manually on each boot:
 
 To run AutoShield in the background as a daemon:
 
-1. Navigate to the service file:
-- sudo nano /etc/systemd/system/autoshield.service
+1. Edit the service file:
+- nano /config/autoshield.service
+- Replace the paths inside <> with your AutoShield directory, then save (^X)
+- sudo cp ~/config/autoshield.service /etc/systemd/system/autoshield.service
 
-2. Paste the following into the .service file, replacing the paths inside <>:
-```ini
-[Unit]
-Description=AutoShield Daemon
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=<your AutoShield directory>/venv/bin/python -m src.main
-Restart=on-failure
-User=root
-WorkingDirectory=<your AutoShield directory>
-
-[Install]
-WantedBy=multi-user.target
-```
-
-3. Reload systemd and enable the service
+2. Reload systemd and enable the service
 - sudo systemctl daemon-reload
 - sudo systemctl enable autoshield
 - sudo systemctl start autoshield
