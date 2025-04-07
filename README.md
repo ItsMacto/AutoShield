@@ -29,8 +29,8 @@ an SQLite database, and provides reporting capabilities to help you track and an
 
 Clone the repository to your local machine and navigate to the project directory:
 
-- git clone https://github.com/yourusername/autoshield.git
-- cd autoshield
+- git clone https://github.com/MysticMods-1/AutoShield.git
+- cd AutoShield
 
 ### 2. Setup Python Virtual Environment
 
