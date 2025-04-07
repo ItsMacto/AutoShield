@@ -5,16 +5,19 @@ import sys
 import os
 import yaml
 
-
+# Add parent directory to path so we can import the src modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.firewall import Firewall
 from src.logger import Logger
 
-app = Flask(__name__)
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+app = Flask(__name__, 
+           template_folder=os.path.join(CURRENT_DIR, 'templates'),
+           static_folder=os.path.join(CURRENT_DIR, 'static'))
 app.secret_key = 'autoshield_secret_key'
 
 # Load config
-CONFIG_PATH = os.environ.get('AUTOSHIELD_CONFIG', os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config', 'config.yaml'))
+CONFIG_PATH = os.environ.get('AUTOSHIELD_CONFIG', os.path.join(os.path.dirname(CURRENT_DIR), 'config', 'config.yaml'))
 try:
     with open(CONFIG_PATH, 'r') as f:
         config = yaml.safe_load(f)
@@ -136,4 +139,4 @@ if __name__ == '__main__':
         print("Warning: This application requires root privileges to modify firewall rules.")
         print("Consider running with sudo.")
     
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
