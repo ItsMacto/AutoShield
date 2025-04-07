@@ -44,7 +44,7 @@ Clone the repository to your local machine and navigate to the project directory
 ### 4. Configure AutoShield
 
 Edit the following file with your desired rules:
-- cd config/config.yaml
+- nano config/config.yaml
 
 ### 5. Running AutoShield Manually
 
