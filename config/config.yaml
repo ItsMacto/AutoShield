@@ -27,8 +27,8 @@ firewall:
   max_block_duration: 4320  # 72 hours
   # Whitelisted IP's that wont be blocked
   whitelist:
-    - "127.0.0.1" # Local host
-    - "192.168.1.1" # Default private network
+    #- "127.0.0.1" # Local host
+    #- "192.168.1.1" # Default private network
 
 # Database settings
 database:
