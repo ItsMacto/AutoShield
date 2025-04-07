@@ -1,155 +1,144 @@
-import logging
 import threading
+import time
+import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Set, Any, Optional, Union, Callable
+from typing import Dict, Any, Optional
 
 class RuleEngine:
-    def __init__(self, config: Dict[str, Any], logger: Any, firewall: Any):
+    """
+    RuleEngine is responsible for:
+      - Processing failed attempts and deciding when to block
+      - Determining block durations based on config
+      - Spawning a thread that periodically checks for expired blocks
+    """
+    def __init__(self, config: Dict[str, Any], logger, firewall):
         """
-        Initialize the rule engine
+        Initialize RuleEngine
         
         Args:
-            config: Config dict
-            logger: Logger instance
-            firewall: Firewall instance
+            config: Dictionary loaded from config.yaml
+            logger: Instance of Logger (src/logger.py)
+            firewall: Instance of Firewall (src/firewall.py)
         """
         self.config = config
         self.logger = logger
         self.firewall = firewall
-        self.log = logging.getLogger('autoshield')
-        
-        # loading config
-        self.threshold = config['rules']['threshold']
-        self.time_window = config['rules']['time_window']
-        self.block_duration = config['firewall']['block_duration']
-        self.block_duration_multiplier = config['firewall']['block_duration_multiplier']
-        self.max_block_duration = config['firewall']['max_block_duration']
-        
-        
-        self.recent_attempts: Dict[str, List[datetime]] = {}
-        self.scheduled_unblocks: Dict[str, datetime] = {}
-        self.lock = threading.Lock()
-        
-        # creates a background thread for removing expired blocks
-        self.unblock_thread = threading.Thread(target=self._check_expired_blocks, daemon=True)
-        self.running = False
-    
+
+        self.log = logging.getLogger("autoshield")
+
+        # Monitoring thresholds
+        self.threshold = config["rules"]["threshold"]
+        self.time_window = config["rules"]["time_window"]
+
+        # Block duration settings
+        self.block_duration_minutes = config["firewall"]["block_duration"]
+        self.block_duration_multiplier = config["firewall"]["block_duration_multiplier"]
+        self.max_block_duration_minutes = config["firewall"]["max_block_duration"]
+
+        # Thread control
+        self._stop_event = threading.Event()
+        self._thread = threading.Thread(target=self._background_expiry_check, daemon=True)
+
     def start(self) -> None:
         """
-        Start the unblock thread
+        Start any background processes needed by the rule engine.
         """
-        self.running = True
-        self.unblock_thread.start()
-        self.log.info("Rule engine started")
-    
+        self.log.info("Starting RuleEngine thread for block expiry checks.")
+        self._thread.start()
+
     def stop(self) -> None:
         """
-        Stop the unblock thread
+        Stop the background processes gracefully.
         """
-        self.running = False
-        if self.unblock_thread.is_alive():
-            self.unblock_thread.join(timeout=5)
-        self.log.info("Rule engine stopped")
-    
+        self.log.info("Stopping RuleEngine thread.")
+        self._stop_event.set()
+        self._thread.join()
+
     def process_attempt(self, ip: str, timestamp: datetime, details: str) -> None:
         """
-        Process failed login attempt. Block if needed
+        Process a single failed attempt. If the IP exceeds the threshold,
+        calculate block duration and block it via the firewall.
         
         Args:
-            ip: IP of the attempt
-            timestamp: When the attempt happend
-            details: Details about the attempt
+            ip: The IP address that made the failed attempt.
+            timestamp: The datetime of the failed attempt.
+            details: Additional details (log entry, etc.).
         """
-
+        # 1. Log the attempt in our DB.
         self.logger.log_attempt(ip, timestamp, details)
-        
-        # Check if IP already blocked
-        with self.lock:
-            if ip in self.scheduled_unblocks:
-                self.log.debug(f"Ignoring attempt from already blocked IP {ip}")
-                return
-        
-        # Update local memory (recent_attempts)
-        with self.lock:
-            if ip not in self.recent_attempts:
-                self.recent_attempts[ip] = []
-            self.recent_attempts[ip].append(timestamp)
-            
-            # removes old attempts not in time window
-            cutoff = timestamp - timedelta(minutes=self.time_window)
-            self.recent_attempts[ip] = [t for t in self.recent_attempts[ip] if t >= cutoff]
-        
 
-        db_attempts = self.logger.get_recent_attempts(ip, self.time_window)
-        
-        with self.lock:
-            all_timestamps = set(self.recent_attempts[ip]).union(set(db_attempts))
-            recent_count = len(all_timestamps)
-        
-        block_count, last_block, _ = self.logger.get_block_history(ip)
-        
-        
-        block_minutes = min(
-            self.max_block_duration,
-            self.block_duration * (self.block_duration_multiplier ** block_count)
-        )
-        
-        self.log.debug(
-            f"IP {ip}: {recent_count}/{self.threshold} recent attempts, "
-            f"block history: {block_count}"
-        )
-        
-        if recent_count >= self.threshold:
-            self.log.info(
-                f"Threshold met for IP {ip}: {recent_count} attempts in {self.time_window} minutes, "
-            )
-            self._block_ip(ip, timestamp, block_minutes)
-    
-    def _block_ip(self, ip: str, timestamp: datetime, block_minutes: float) -> None:
+        # 2. Check how many attempts in the last X minutes.
+        recent_attempts = self.logger.get_recent_attempts(ip, self.time_window)
+        attempt_count = len(recent_attempts)
+
+        if attempt_count >= self.threshold:
+            # Already above threshold, let's see if IP is currently blocked
+            # or if we need to block it now.
+            block_count, last_block_time, last_expiry = self.logger.get_block_history(ip)
+
+            # If it's already within an active block, do nothing special here.
+            # We'll rely on the expiration to handle unblocking.
+            # But if it's not blocked, or the block is expired, block again.
+
+            # We figure out the new block duration. The block_count helps
+            # us do incremental blocking. If block_count=0, this is the first time.
+            # If block_count=1 or more, multiply the base duration
+            # but do not exceed max block duration.
+
+            if block_count == 0 or (last_expiry and last_expiry < datetime.now()):
+                # Need to block IP
+                new_block_duration = self._calculate_block_duration(block_count)
+                block_start = datetime.now()
+                block_end = block_start + timedelta(minutes=new_block_duration)
+
+                # Actually block
+                blocked = self.firewall.block_ip(ip)
+                if blocked:
+                    # Log in DB
+                    self.logger.log_block(ip, block_start, block_end)
+
+    def _calculate_block_duration(self, block_count: int) -> int:
         """
-        Block an IP address for a duration
+        Given how many times an IP has been blocked previously,
+        compute how long the new block should be (in minutes).
+        """
+        base = self.block_duration_minutes
+        multi = self.block_duration_multiplier
+        max_dur = self.max_block_duration_minutes
+
+        # Duration = base * (multi^(block_count)) 
+        # Because block_count is 0-based for the first block, we’ll do (block_count) if you want
+        # repeated offense to ramp up. If you want the first block to remain just the base,
+        # use block_count for exponent. Example: block_count = 2 => block_duration = base * (multi^2)
+        # NOTE: Adjust logic if you prefer the very first block to be multiplied as well.
         
-        Args:
-            ip: The IP to block
-            timestamp: When the block is applied
-            block_minutes: Lenght of the block in minutes
+        computed = base * (multi ** block_count)
+        if computed > max_dur:
+            computed = max_dur
+
+        return computed
+
+    def _background_expiry_check(self) -> None:
         """
-        expiry_timestamp = timestamp + timedelta(minutes=block_minutes)
-        
-        if self.firewall.block_ip(ip):
-            self.logger.log_block(ip, timestamp, expiry_timestamp)
-            
-            with self.lock:
-                self.scheduled_unblocks[ip] = expiry_timestamp
-    
-    def _check_expired_blocks(self) -> None:
+        Background thread method that periodically checks for expired blocks
+        and unblocks them in the firewall if needed.
         """
-        Background thread to check and remove expired blocks
-        """
-        while self.running:
-            now = datetime.now()
-            to_unblock = []
-            
-            with self.lock:
-                for ip, expiry in list(self.scheduled_unblocks.items()):
-                    if now >= expiry:
-                        to_unblock.append(ip)
-                        del self.scheduled_unblocks[ip]
-            
-            # unblock
-            for ip in to_unblock:
-                if self.firewall.unblock_ip(ip):
-                    self.logger.log_unblock(ip, now)
-            
-            # check for missed blockss
-            active_blocks = self.logger.get_active_blocks()
-            for ip, expiry in active_blocks:
-                if now >= expiry and ip not in self.scheduled_unblocks:
-                    if self.firewall.unblock_ip(ip):
-                        self.logger.log_unblock(ip, now)
-            
-            # sleep for a min before checking TODO: may be a better way idk
-            for _ in range(60):
-                if not self.running:
-                    break
-                threading.Event().wait(1)
+        self.log.info("RuleEngine expiry check thread started.")
+        while not self._stop_event.is_set():
+            try:
+                active_blocks = self.logger.get_active_blocks()
+                now = datetime.now()
+
+                for ip, expiry_timestamp in active_blocks:
+                    if now >= expiry_timestamp:
+                        # This block has expired. Unblock in firewall, log the unblock event.
+                        unblocked = self.firewall.unblock_ip(ip)
+                        if unblocked:
+                            self.logger.log_unblock(ip, now)
+            except Exception as e:
+                self.log.error(f"Error during block expiry check: {e}")
+
+            # Sleep some interval, e.g., 60 seconds between checks
+            time.sleep(60)
+
+        self.log.info("RuleEngine expiry check thread exiting.")

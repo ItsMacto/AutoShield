@@ -1,0 +1,12 @@
+[Unit]
+Description=AutoShield Daemon
+After=network.target
+
+[Service]
+Type=simple
+# Update the path below to match where your AutoShield code is located:
+ExecStart=/usr/bin/python3 /opt/autoshield/src/main.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
