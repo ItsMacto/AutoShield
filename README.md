@@ -1,4 +1,4 @@
-# AutoShield
+# AutoShield 🛡️
 
 AutoShield is a Linux-based security tool that monitors system logs for failed login attempts 
 and automatically blocks offending IP addresses using nftables. It logs events to a file and 
