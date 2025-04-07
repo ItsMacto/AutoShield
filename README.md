@@ -79,3 +79,7 @@ To run AutoShield in the background as a daemon:
 - sqlite3 /var/lib/autoshield/database.db
 - SELECT * FROM attempts;
 - SELECT * FROM blocks;
+
+### 8. Remove Blocks
+- sudo nft -a list chain inet autoshield input
+- sudo nft delete rule inet autoshield input handle <handle #>
