@@ -26,16 +26,13 @@ class RuleEngine:
 
         self.log = logging.getLogger("autoshield")
 
-        # Monitoring thresholds
         self.threshold = config["rules"]["threshold"]
         self.time_window = config["rules"]["time_window"]
 
-        # Block duration settings
         self.block_duration_minutes = config["firewall"]["block_duration"]
         self.block_duration_multiplier = config["firewall"]["block_duration_multiplier"]
         self.max_block_duration_minutes = config["firewall"]["max_block_duration"]
 
-        # Thread control
         self._stop_event = threading.Event()
         self._thread = threading.Thread(target=self._background_expiry_check, daemon=True)
 
@@ -113,7 +110,6 @@ class RuleEngine:
 
                 for ip, expiry_timestamp in active_blocks:
                     if now >= expiry_timestamp:
-                        # This block has expired. Unblock in firewall, log the unblock event.
                         unblocked = self.firewall.unblock_ip(ip)
                         if unblocked:
                             self.logger.log_unblock(ip, now)

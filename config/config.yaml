@@ -20,7 +20,7 @@ rules:
 # Firewall settings
 firewall:
   # Block duration in minutes
-  block_duration: 60
+  block_duration: 1
   # Increase block duration by this factor for each previous block
   block_duration_multiplier: 2
   # Maximum block duration in minutes

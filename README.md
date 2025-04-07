@@ -22,7 +22,7 @@ an SQLite database, and provides reporting capabilities to help you track and an
 - The following Python packages (installed in your virtual environment):
   - `pyyaml`
   - `systemd-python`
-
+  - `flask`
 ## Installation & Setup
 
 ### Quick Install (Recommended)
@@ -44,7 +44,7 @@ sudo ./install.sh
 
 Clone the repository to your local machine and navigate to the project directory:
 
-- git clone https://github.com/MysticMods-1/AutoShield.git
+- git clone https://github.com/ItsMacto/AutoShield.git
 - cd AutoShield
 
 ### 2. Setup Python Virtual Environment
@@ -54,7 +54,7 @@ Clone the repository to your local machine and navigate to the project directory
 
 ### 3. Install Required Python Packages
 
-- pip install pyyaml systemd-python
+- pip install pyyaml systemd-python flask
 
 ### 4. Configure AutoShield
 
@@ -93,3 +93,7 @@ To run AutoShield in the background as a daemon:
 - sqlite3 /var/lib/autoshield/database.db
 - SELECT * FROM attempts;
 - SELECT * FROM blocks;
+
+### 8. Remove Blocks
+- sudo nft -a list chain inet autoshield input
+- sudo nft delete rule inet autoshield input handle <handle #>
