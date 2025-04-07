@@ -10,7 +10,7 @@ from datetime import datetime
 from src.logger import Logger
 from src.firewall import Firewall
 from src.rules import RuleEngine
-from monitor import Monitor
+from src.monitor import Monitor
 
 def load_config(config_path: str) -> Dict[str, Any]:
     """
