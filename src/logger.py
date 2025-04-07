@@ -54,7 +54,7 @@ class Logger:
         
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
         
-        self.conn = sqlite3.connect(db_path)
+        self.conn = sqlite3.connect(db_path, check_same_thread=False)
         cursor = self.conn.cursor()
         
         # Attempts table

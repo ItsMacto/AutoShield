@@ -1,0 +1,14 @@
+[Unit]
+Description=AutoShield Daemon
+After=network.target
+
+[Service]
+Type=simple
+# Update the path below to match where your AutoShield code is located:
+ExecStart=/home/jeff/Documents/AutoShield-main/venv/bin/python -m src.main
+Restart=on-failure
+User=root
+WorkingDirectory=/home/jeff/Documents/AutoShield-main
+
+[Install]
+WantedBy=multi-user.target
