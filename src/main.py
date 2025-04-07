@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional, Callable
 from datetime import datetime
 
-from logger import Logger
+from src.logger import Logger
 from src.firewall import Firewall
 from src.rules import RuleEngine
 from monitor import Monitor

@@ -24,7 +24,7 @@ firewall:
   # Increase block duration by this factor for each previous block
   block_duration_multiplier: 2
   # Maximum block duration in minutes
-  max_block_duration: 4,320  # 72 hours
+  max_block_duration: 4320  # 72 hours
   # Whitelisted IP's that wont be blocked
   whitelist:
     - "127.0.0.1" # Local host
