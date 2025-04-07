@@ -95,3 +95,6 @@ echo ""
 echo "To check logs: tail -f /var/log/autoshield.log"
 echo "To manage service: systemctl {start|stop|restart|status} autoshield"
 echo ""
+
+echo "Starting web interface (webapp.py)..."
+nohup "$INSTALL_DIR/venv/bin/python" webapp.py > /var/log/autoshield-web.log 2>&1 &
