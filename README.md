@@ -22,6 +22,7 @@ an SQLite database, and provides reporting capabilities to help you track and an
 - The following Python packages (installed in your virtual environment):
   - `pyyaml`
   - `systemd-python`
+  - `flask`
 
 ## Installation & Setup
 
@@ -39,7 +40,7 @@ Clone the repository to your local machine and navigate to the project directory
 
 ### 3. Install Required Python Packages
 
-- pip install pyyaml systemd-python
+- pip install pyyaml systemd-python flask
 
 ### 4. Configure AutoShield
 
