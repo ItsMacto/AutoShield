@@ -67,9 +67,11 @@ class RuleEngine:
         attempt_count = len(recent_attempts)
 
         if attempt_count >= self.threshold:
+
             block_count, last_block_time, last_expiry = self.logger.get_block_history(ip)
 
             if block_count == 0 or (last_expiry and last_expiry < datetime.now()):
+
                 new_block_duration = self._calculate_block_duration(block_count)
                 block_start = datetime.now()
                 block_end = block_start + timedelta(minutes=new_block_duration)
@@ -86,6 +88,8 @@ class RuleEngine:
         base = self.block_duration_minutes
         multi = self.block_duration_multiplier
         max_dur = self.max_block_duration_minutes
+
+        # Duration = base * (multi^(block_count)) 
         
         computed = base * (multi ** block_count)
         if computed > max_dur:
@@ -112,7 +116,7 @@ class RuleEngine:
             except Exception as e:
                 self.log.error(f"Error during block expiry check: {e}")
 
-            self._stop_event.wait(10) #check every 10 seconds 
 
+            self._stop_event.wait(10) #check every 10 seconds 
 
         self.log.info("RuleEngine expiry check thread exiting.")
