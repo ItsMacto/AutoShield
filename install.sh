@@ -96,5 +96,7 @@ echo "To check logs: tail -f /var/log/autoshield.log"
 echo "To manage service: systemctl {start|stop|restart|status} autoshield"
 echo ""
 
-echo "Starting web interface (webapp.py)..."
+echo "Starting web interface..."
 nohup "$INSTALL_DIR/venv/bin/python" webapp.py > /var/log/autoshield-web.log 2>&1 &
+HOST_IP=$(hostname -I | awk '{print $1}')
+echo "Web interface is available at: http://$HOST_IP:5000"
