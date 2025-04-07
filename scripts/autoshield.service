@@ -4,12 +4,11 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory= <enter your AutoShield directory >
-Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart= < enter your AutoShield directory >/venv/bin/python -m src.main
+ExecStart=/opt/autoshield/venv/bin/python -m src.main
 Restart=on-failure
 RestartSec=10
 User=root
+WorkingDirectory=/opt/autoshield
 
 # Security settings
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW
