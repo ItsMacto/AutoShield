@@ -25,6 +25,21 @@ an SQLite database, and provides reporting capabilities to help you track and an
 
 ## Installation & Setup
 
+### Quick Install (Recommended)
+
+``` bash
+# Clone the repository
+git clone https://github.com/MysticMods-1/AutoShield.git
+cd AutoShield
+
+# Make the installer executable
+chmod +x install.sh
+
+# Run the installer with sudo
+sudo ./install.sh
+```
+
+### Manual Installation
 ### 1. Clone the Repository
 
 Clone the repository to your local machine and navigate to the project directory:
