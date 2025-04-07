@@ -34,12 +34,12 @@ Clone the repository to your local machine and navigate to the project directory
 
 ### 2. Setup Python Virtual Environment
 
-python3 -m venv venv
-source venv/bin/activate
+- python3 -m venv venv
+- source venv/bin/activate
 
 ### 3. Install Required Python Packages
 
-pip install pyyaml systemd-python
+- pip install pyyaml systemd-python
 
 ### 4. Configure AutoShield
 
