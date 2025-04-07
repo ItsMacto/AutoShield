@@ -39,9 +39,7 @@ chmod +x install.sh
 sudo ./install.sh
 ```
 
-
 ### Manual Installation
-
 ### 1. Clone the Repository
 
 Clone the repository to your local machine and navigate to the project directory:
