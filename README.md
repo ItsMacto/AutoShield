@@ -49,7 +49,7 @@ Edit the following file with your desired rules:
 ### 5. Running AutoShield Manually
 
 To run AutoShield manually on each boot:
-- python3 -m src.main
+- sudo python3 -m src.main
 
 ### 6. Running AutoShield as a Daemon
 
