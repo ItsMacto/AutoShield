@@ -29,7 +29,7 @@ an SQLite database, and provides reporting capabilities to help you track and an
 
 ``` bash
 # Clone the repository
-git clone https://github.com/MysticMods-1/AutoShield.git
+git clone https://github.com/ItsMacto/AutoShield.git
 cd AutoShield
 
 # Make the installer executable
