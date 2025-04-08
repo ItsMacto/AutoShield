@@ -24,14 +24,12 @@ class Firewall:
         Initialize nftables with table and chain if they don't exist
         """
         try:
-            # Check for tabless
             check_table = subprocess.run(
                 ['nft', 'list', 'table', 'inet', 'autoshield'],
                 capture_output=True, text=True
             )
             
             if check_table.returncode != 0:
-                # Create table and chain
                 subprocess.run([
                     'nft', 'add', 'table', 'inet', 'autoshield'
                 ], check=True)
@@ -61,7 +59,6 @@ class Firewall:
             return False
         
         try:
-            # Check if IP already blocked
             check_cmd = subprocess.run(
                 ['nft', 'list', 'chain', 'inet', 'autoshield', 'input'],
                 capture_output=True, text=True
@@ -99,12 +96,10 @@ class Firewall:
                 capture_output=True, text=True
             )
             
-            # look for the rule from the output
             for line in list_cmd.stdout.splitlines():
                 if f"ip saddr {ip}" in line and "handle" in line:
                     handle = line.split("handle")[-1].strip().split()[0]
                     
-                    # delete the rule
                     subprocess.run([
                         'nft', 'delete', 'rule', 'inet', 'autoshield', 'input', 'handle', handle
                     ], check=True)
