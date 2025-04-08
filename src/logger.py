@@ -216,11 +216,17 @@ class Logger:
         
         with self.db_lock:
             cursor = self.conn.cursor()
-            cursor.execute(
-                'SELECT ip, expiry_timestamp FROM blocks WHERE expiry_timestamp > ? '
-                'GROUP BY ip HAVING MAX(id)',
-                (now,)
-            )
+            cursor.execute('''
+                SELECT b.ip, b.expiry_timestamp 
+                FROM blocks b
+                INNER JOIN (
+                    SELECT ip, MAX(id) as max_id
+                    FROM blocks
+                    GROUP BY ip
+                ) m ON b.ip = m.ip AND b.id = m.max_id
+                WHERE b.expiry_timestamp > ?
+            ''', (now,))
+            
             blocks = [(row[0], datetime.fromisoformat(row[1])) for row in cursor.fetchall()]
             
         return blocks
