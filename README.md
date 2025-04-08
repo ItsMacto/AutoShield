@@ -24,7 +24,6 @@ an SQLite database, and provides reporting capabilities to help you track and an
 ## Installation & Setup
 
 ### Quick Install
-
 ``` bash
 # Clone the repository
 git clone git@github.com:ItsMacto/AutoShield.git
@@ -32,6 +31,8 @@ cd AutoShield
 
 # Make the installer executable
 chmod +x install.sh
+
+# Edit config for whitelist, blocking, and directory locations
 
 # Run the installer with sudo
 sudo ./install.sh
