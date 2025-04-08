@@ -44,7 +44,7 @@ sudo ./install.sh
 
 Clone the repository to your local machine and navigate to the project directory:
 
-- git clone https://github.com/ItsMacto/AutoShield.git
+- git clone git@github.com:ItsMacto/AutoShield.git
 - cd AutoShield
 
 ### 2. Setup Python Virtual Environment
