@@ -4,20 +4,19 @@ from datetime import datetime, timedelta
 import sys
 import os
 import yaml
+import json
+import re
 
 # Add parent directory to path so we can import the src modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.firewall import Firewall
 from src.logger import Logger
 
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-app = Flask(__name__, 
-           template_folder=os.path.join(CURRENT_DIR, 'templates'),
-           static_folder=os.path.join(CURRENT_DIR, 'static'))
-app.secret_key = 'autoshield_secret_key'
+app = Flask(__name__)
+app.secret_key = 'autoshield_secret_key'  # Used for flash messages
 
 # Load config
-CONFIG_PATH = os.environ.get('AUTOSHIELD_CONFIG', os.path.join(os.path.dirname(CURRENT_DIR), 'config', 'config.yaml'))
+CONFIG_PATH = os.environ.get('AUTOSHIELD_CONFIG', os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config', 'config.yaml'))
 try:
     with open(CONFIG_PATH, 'r') as f:
         config = yaml.safe_load(f)
@@ -34,6 +33,44 @@ except Exception as e:
     sys.exit(1)
 
 DB_PATH = config['database']['path']
+
+def format_datetime(dt_value):
+    """Format datetime values for display"""
+    if isinstance(dt_value, str):
+        # Handle ISO format strings
+        try:
+            # Remove microseconds and timezone
+            parts = dt_value.split('.')
+            if len(parts) > 1:
+                dt_clean = parts[0].replace('T', ' ')
+                return dt_clean
+            return dt_value.replace('T', ' ')
+        except:
+            return dt_value
+    elif isinstance(dt_value, datetime):
+        return dt_value.strftime('%Y-%m-%d %H:%M:%S')
+    return str(dt_value)
+
+def parse_details(details_str):
+    """Extract useful information from the details string"""
+    if not details_str:
+        return "No details available"
+    
+    try:
+        if "MESSAGE" in details_str:
+            message_match = re.search(r"'MESSAGE':\s*'([^']*)'", details_str)
+            if message_match:
+                message = message_match.group(1)
+                if "Failed password for" in message:
+                    user_match = re.search(r"Failed password for ([^ ]+) from", message)
+                    if user_match:
+                        username = user_match.group(1)
+                        return f"Failed login attempt - User: {username}"
+                return message
+        
+        return "Failed login attempt"
+    except:
+        return "Failed login attempt"
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -64,6 +101,21 @@ def index():
             ORDER BY b.block_timestamp DESC
         """).fetchall()
         
+        # Format the data
+        formatted_attempts = []
+        for attempt in attempts:
+            formatted_attempt = dict(attempt)
+            formatted_attempt['formatted_timestamp'] = format_datetime(attempt['timestamp'])
+            formatted_attempt['parsed_details'] = parse_details(attempt['details'])
+            formatted_attempts.append(formatted_attempt)
+        
+        formatted_blocks = []
+        for block in blocks:
+            formatted_block = dict(block)
+            formatted_block['formatted_block_timestamp'] = format_datetime(block['block_timestamp'])
+            formatted_block['formatted_expiry_timestamp'] = format_datetime(block['expiry_timestamp'])
+            formatted_blocks.append(formatted_block)
+        
         # Get current firewall status
         try:
             firewall_blocks = firewall.get_blocked_ips()
@@ -73,8 +125,8 @@ def index():
         
         conn.close()
         return render_template('index.html', 
-                              attempts=attempts, 
-                              blocks=blocks, 
+                              attempts=formatted_attempts, 
+                              blocks=formatted_blocks, 
                               firewall_blocks=firewall_blocks,
                               now=datetime.now())
     except Exception as e:
@@ -91,6 +143,12 @@ def add_block():
     if not ip:
         flash('IP address is required', 'danger')
         return redirect(url_for('index'))
+    
+    # Validate IP format
+    # ip_pattern = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
+    # if not ip_pattern.match(ip):
+    #     flash('Invalid IP address format', 'danger')
+    #     return redirect(url_for('index'))
     
     try:
         # Block the IP
@@ -139,4 +197,4 @@ if __name__ == '__main__':
         print("Warning: This application requires root privileges to modify firewall rules.")
         print("Consider running with sudo.")
     
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000)
