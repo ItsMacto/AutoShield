@@ -34,7 +34,7 @@ body {
 
 /* Stats Cards */
 .stats-container {
-    display: flex;
+    /* display: flex; */
     /* justify-content: flex-end; */
     gap: 15px;
     margin-top: 10px;
