@@ -129,10 +129,18 @@
                                     <span class="ip-badge">{{ block['ip'] }}</span>
                                 </td>
                                 <td class="timestamp">
-                                    {{ block['formatted_block_timestamp'] if block.get('formatted_block_timestamp') else (block['block_timestamp'].split('.')[0].replace('T', ' ') if block['block_timestamp'] is string else block['block_timestamp'].strftime('%Y-%m-%d %H:%M:%S')) }}
+                                    {% if block['block_timestamp'] is string %}
+                                        {{ block['block_timestamp'].split('.')[0].replace('T', ' ') }}
+                                    {% else %}
+                                        {{ block['block_timestamp'].strftime('%Y-%m-%d %H:%M:%S') }}
+                                    {% endif %}
                                 </td>
                                 <td class="timestamp">
-                                    {{ block['formatted_expiry_timestamp'] if block.get('formatted_expiry_timestamp') else (block['expiry_timestamp'].split('.')[0].replace('T', ' ') if block['expiry_timestamp'] is string else block['expiry_timestamp'].strftime('%Y-%m-%d %H:%M:%S')) }}
+                                    {% if block['expiry_timestamp'] is string %}
+                                        {{ block['expiry_timestamp'].split('.')[0].replace('T', ' ') }}
+                                    {% else %}
+                                        {{ block['expiry_timestamp'].strftime('%Y-%m-%d %H:%M:%S') }}
+                                    {% endif %}
                                 </td>
                                 <td><span class="badge bg-secondary">{{ block['block_count'] }}</span></td>
                                 <td>
@@ -143,21 +151,11 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <div class="btn-group">
-                                        <button type="button" class="btn btn-sm btn-primary action-btn show-details-btn" 
-                                                data-ip="{{ block['ip'] }}"
-                                                data-block-count="{{ block['block_count'] }}"
-                                                data-block-timestamp="{{ block['formatted_block_timestamp'] if block.get('formatted_block_timestamp') else (block['block_timestamp'].split('.')[0].replace('T', ' ') if block['block_timestamp'] is string else block['block_timestamp'].strftime('%Y-%m-%d %H:%M:%S')) }}"
-                                                data-expiry-timestamp="{{ block['formatted_expiry_timestamp'] if block.get('formatted_expiry_timestamp') else (block['expiry_timestamp'].split('.')[0].replace('T', ' ') if block['expiry_timestamp'] is string else block['expiry_timestamp'].strftime('%Y-%m-%d %H:%M:%S')) }}"
-                                                data-status="{{ 'Active' if block['ip'] in firewall_blocks else 'Inactive' }}">
-                                            <i class="fa fa-info-circle"></i> Details
+                                    <form action="{{ url_for('remove_block', ip=block['ip']) }}" method="post" class="unblock-form">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger action-btn">
+                                            <i class="fa fa-times"></i> Unblock
                                         </button>
-                                        <form action="{{ url_for('remove_block', ip=block['ip']) }}" method="post" class="unblock-form">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger action-btn">
-                                                <i class="fa fa-times"></i> Unblock
-                                            </button>
-                                        </form>
-                                    </div>
+                                    </form>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -197,12 +195,14 @@
                                     <span class="ip-badge">{{ attempt['ip'] }}</span>
                                 </td>
                                 <td class="timestamp">
-                                    {{ attempt['formatted_timestamp'] if attempt.get('formatted_timestamp') else (attempt['timestamp'].split('.')[0].replace('T', ' ').split('-04:00')[0] if attempt['timestamp'] is string else attempt['timestamp'].strftime('%Y-%m-%d %H:%M:%S')) }}
+                                    {% if attempt['timestamp'] is string %}
+                                        {{ attempt['timestamp'].split('.')[0].replace('T', ' ').split('-04:00')[0] }}
+                                    {% else %}
+                                        {{ attempt['timestamp'].strftime('%Y-%m-%d %H:%M:%S') }}
+                                    {% endif %}
                                 </td>
                                 <td>
-                                    {% if attempt.get('parsed_details') %}
-                                        <div class="details-display">{{ attempt['parsed_details'] }}</div>
-                                    {% elif attempt['details'] %}
+                                    {% if attempt['details'] %}
                                         {% set details_dict = attempt['details'] %}
                                         {% if details_dict is string and '{' in details_dict %}
                                             {% if 'MESSAGE' in details_dict %}
@@ -253,111 +253,12 @@
         </div>
     </div>
 
-    <!-- Block Details Modal -->
-    <div class="modal fade" id="blockDetailsModal" tabindex="-1" aria-labelledby="blockDetailsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-shield text-white">
-                    <h5 class="modal-title" id="blockDetailsModalLabel">
-                        <i class="fa fa-info-circle me-2"></i>Block Details
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="card mb-3">
-                                <div class="card-header bg-light">
-                                    <h6 class="mb-0"><i class="fa fa-shield-alt me-2"></i>Block Information</h6>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-striped detail-table">
-                                        <tr>
-                                            <th>IP Address:</th>
-                                            <td><span class="ip-badge" id="modal-ip"></span></td>
-                                        </tr>
-                                        <tr>
-                                            <th>Status:</th>
-                                            <td id="modal-status"></td>
-                                        </tr>
-                                        <tr>
-                                            <th>Block Count:</th>
-                                            <td id="modal-block-count"></td>
-                                        </tr>
-                                        <tr>
-                                            <th>Blocked At:</th>
-                                            <td id="modal-block-timestamp"></td>
-                                        </tr>
-                                        <tr>
-                                            <th>Expires At:</th>
-                                            <td id="modal-expiry-timestamp"></td>
-                                        </tr>
-                                        <tr>
-                                            <th>Duration:</th>
-                                            <td id="modal-duration"></td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header bg-light">
-                                    <h6 class="mb-0"><i class="fa fa-history me-2"></i>Recent Activity</h6>
-                                </div>
-                                <div class="card-body">
-                                    <div id="ip-attempts-container">
-                                        <div class="text-center">
-                                            <div class="spinner-border text-primary" role="status">
-                                                <span class="visually-hidden">Loading...</span>
-                                            </div>
-                                            <p class="mt-2">Loading attempt history...</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mt-3">
-                        <div class="col">
-                            <div class="card">
-                                <div class="card-header bg-light">
-                                    <h6 class="mb-0"><i class="fa fa-chart-line me-2"></i>Block History</h6>
-                                </div>
-                                <div class="card-body">
-                                    <div id="block-history-container">
-                                        <div class="text-center">
-                                            <div class="spinner-border text-primary" role="status">
-                                                <span class="visually-hidden">Loading...</span>
-                                            </div>
-                                            <p class="mt-2">Loading block history...</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <form id="modal-unblock-form" action="" method="post">
-                        <button type="submit" class="btn btn-danger">
-                            <i class="fa fa-ban me-1"></i>Unblock This IP
-                        </button>
-                    </form>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- JS -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Auto-dismiss alerts after 5 seconds
+      document.addEventListener('DOMContentLoaded', function() {
             setTimeout(function() {
                 var alerts = document.querySelectorAll('.alert:not(.alert-info)');
                 alerts.forEach(function(alert) {
@@ -379,122 +280,7 @@
                 });
             });
             
-            // Block Details Modal
-            var blockDetailsButtons = document.querySelectorAll('.show-details-btn');
-            var blockDetailsModal = document.getElementById('blockDetailsModal');
-            var bsModal = new bootstrap.Modal(blockDetailsModal);
-            
-            blockDetailsButtons.forEach(function(button) {
-                button.addEventListener('click', function() {
-                    var ip = this.getAttribute('data-ip');
-                    var blockCount = this.getAttribute('data-block-count');
-                    var blockTimestamp = this.getAttribute('data-block-timestamp');
-                    var expiryTimestamp = this.getAttribute('data-expiry-timestamp');
-                    var status = this.getAttribute('data-status');
-                    
-                    // Calculate block duration
-                    var blockDate = new Date(blockTimestamp.replace(' ', 'T'));
-                    var expiryDate = new Date(expiryTimestamp.replace(' ', 'T'));
-                    var durationMinutes = Math.round((expiryDate - blockDate) / (1000 * 60));
-                    var durationText = durationMinutes + " minutes";
-                    if (durationMinutes >= 60) {
-                        var hours = Math.floor(durationMinutes / 60);
-                        var mins = durationMinutes % 60;
-                        durationText = hours + " hour" + (hours > 1 ? "s" : "") + 
-                                        (mins > 0 ? " " + mins + " minute" + (mins > 1 ? "s" : "") : "");
-                    }
-                    
-                    // Set modal content
-                    document.getElementById('modal-ip').textContent = ip;
-                    
-                    var statusElem = document.getElementById('modal-status');
-                    if (status === 'Active') {
-                        statusElem.innerHTML = '<span class="badge bg-danger status-badge">Active</span>';
-                    } else {
-                        statusElem.innerHTML = '<span class="badge bg-warning text-dark status-badge">Inactive</span>';
-                    }
-                    
-                    document.getElementById('modal-block-count').textContent = blockCount;
-                    document.getElementById('modal-block-timestamp').textContent = blockTimestamp;
-                    document.getElementById('modal-expiry-timestamp').textContent = expiryTimestamp;
-                    document.getElementById('modal-duration').textContent = durationText;
-                    
-                    document.getElementById('modal-unblock-form').action = '/unblock/' + ip;
-                    
-                    loadAttemptHistory(ip);
-                    
-                    loadBlockHistory(ip);
-                    
-                    bsModal.show();
-                });
-            });
-            
-            function loadAttemptHistory(ip) {
-                var container = document.getElementById('ip-attempts-container');
-                
-                // Fetch data from server
-                fetch('/api/attempts/' + ip)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.attempts && data.attempts.length > 0) {
-                            var html = '<div class="list-group">';
-                            data.attempts.forEach(function(attempt) {
-                                html += `
-                                    <div class="list-group-item list-group-item-action">
-                                        <div class="d-flex w-100 justify-content-between">
-                                            <h6 class="mb-1">${attempt.parsed_details || "Failed login attempt"}</h6>
-                                            <small class="text-muted">${attempt.formatted_timestamp}</small>
-                                        </div>
-                                    </div>
-                                `;
-                            });
-                            html += '</div>';
-                            container.innerHTML = html;
-                        } else {
-                            container.innerHTML = '<div class="alert alert-info">No recent login attempts from this IP.</div>';
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching attempt history:', error);
-                        container.innerHTML = '<div class="alert alert-danger">Error loading attempt history. Check console for details.</div>';
-                    });
-            }
-            
-            function loadBlockHistory(ip) {
-                var container = document.getElementById('block-history-container');
-                
-                // Fetch data from server
-                fetch('/api/blocks/' + ip)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.blocks && data.blocks.length > 0) {
-                            var html = '<div class="timeline">';
-                            data.blocks.forEach(function(block, index) {
-                                html += `
-                                    <div class="timeline-item">
-                                        <div class="timeline-badge ${index === 0 ? 'bg-danger' : 'bg-secondary'}">
-                                            <i class="fa fa-ban"></i>
-                                        </div>
-                                        <div class="timeline-content">
-                                            <h6 class="timeline-title">Block #${block.block_count}</h6>
-                                            <p>From: ${block.formatted_block_timestamp}</p>
-                                            <p>Until: ${block.formatted_expiry_timestamp}</p>
-                                        </div>
-                                    </div>
-                                `;
-                            });
-                            html += '</div>';
-                            container.innerHTML = html;
-                        } else {
-                            container.innerHTML = '<div class="alert alert-info">No previous block history for this IP.</div>';
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching block history:', error);
-                        container.innerHTML = '<div class="alert alert-danger">Error loading block history. Check console for details.</div>';
-                    });
-            }
-            
+
             var detailsCells = document.querySelectorAll('.details-cell');
             detailsCells.forEach(function(cell) {
                 if (typeof bootstrap !== 'undefined' && typeof bootstrap.Tooltip !== 'undefined') {

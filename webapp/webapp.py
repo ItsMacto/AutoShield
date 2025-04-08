@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash
 import sqlite3
 from datetime import datetime, timedelta
 import sys
@@ -145,10 +145,10 @@ def add_block():
         return redirect(url_for('index'))
     
     # Validate IP format
-    ip_pattern = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
-    if not ip_pattern.match(ip):
-        flash('Invalid IP address format', 'danger')
-        return redirect(url_for('index'))
+    # ip_pattern = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
+    # if not ip_pattern.match(ip):
+    #     flash('Invalid IP address format', 'danger')
+    #     return redirect(url_for('index'))
     
     try:
         # Block the IP
@@ -182,71 +182,6 @@ def remove_block(ip):
         flash(f'Error unblocking IP: {str(e)}', 'danger')
     
     return redirect(url_for('index'))
-
-# API routes for the modal
-@app.route('/api/attempts/<ip>', methods=['GET'])
-def get_ip_attempts(ip):
-    try:
-        conn = get_db_connection()
-        
-        # Get all attempts for this IP (limit to last 30 days)
-        thirty_days_ago = (datetime.now() - timedelta(days=30)).isoformat()
-        attempts = conn.execute("""
-            SELECT ip, timestamp, details 
-            FROM attempts 
-            WHERE ip = ? AND timestamp > ?
-            ORDER BY timestamp DESC
-            LIMIT 50
-        """, (ip, thirty_days_ago)).fetchall()
-        
-        # Format the data
-        formatted_attempts = []
-        for attempt in attempts:
-            formatted_attempt = {
-                'ip': attempt['ip'],
-                'timestamp': attempt['timestamp'],
-                'details': attempt['details'],
-                'formatted_timestamp': format_datetime(attempt['timestamp']),
-                'parsed_details': parse_details(attempt['details'])
-            }
-            formatted_attempts.append(formatted_attempt)
-        
-        conn.close()
-        return jsonify({'success': True, 'attempts': formatted_attempts})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
-@app.route('/api/blocks/<ip>', methods=['GET'])
-def get_block_history(ip):
-    try:
-        conn = get_db_connection()
-        
-        # Get block history for this IP
-        blocks = conn.execute("""
-            SELECT ip, block_timestamp, expiry_timestamp, block_count
-            FROM blocks
-            WHERE ip = ?
-            ORDER BY block_timestamp DESC
-            LIMIT 20
-        """, (ip,)).fetchall()
-        
-        # Format the data
-        formatted_blocks = []
-        for block in blocks:
-            formatted_block = {
-                'ip': block['ip'],
-                'block_timestamp': block['block_timestamp'],
-                'expiry_timestamp': block['expiry_timestamp'],
-                'block_count': block['block_count'],
-                'formatted_block_timestamp': format_datetime(block['block_timestamp']),
-                'formatted_expiry_timestamp': format_datetime(block['expiry_timestamp'])
-            }
-            formatted_blocks.append(formatted_block)
-        
-        conn.close()
-        return jsonify({'success': True, 'blocks': formatted_blocks})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
 
 @app.errorhandler(404)
 def page_not_found(e):
