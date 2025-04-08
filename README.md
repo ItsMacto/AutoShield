@@ -22,7 +22,7 @@ an SQLite database, and provides reporting capabilities to help you track and an
 
 ## Installation & Setup
 
-### Quick Install (Recommended)
+### Quick Install
 
 ``` bash
 # Clone the repository
