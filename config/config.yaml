@@ -12,9 +12,9 @@ monitoring:
 # Rules  settings
 rules:
   # Number of failed attempts before blocking
-  threshold: 5
+  threshold: 2
   # Time window in minutes to consider for threshold
-  time_window: 10
+  time_window: 2
 
 
 # Firewall settings
@@ -22,7 +22,7 @@ firewall:
   # Block duration in minutes
   block_duration: 1
   # Increase block duration by this factor for each previous block
-  block_duration_multiplier: 2
+  block_duration_multiplier: 1
   # Maximum block duration in minutes
   max_block_duration: 4320  # 72 hours
   # Whitelisted IP's that wont be blocked

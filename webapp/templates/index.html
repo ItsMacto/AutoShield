@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AutoShield Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-shield">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fa fa-shield-alt"></i> AutoShield
+            </a>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <h1 class="display-5">Dashboard</h1>
+                <p class="text-muted">Last updated: {{ now.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+        
+        <!-- Add Block Form -->
+        <div class="card mb-4">
+            <div class="card-header bg-shield text-white">
+                <h5><i class="fa fa-ban me-2"></i>Block IP Address</h5>
+            </div>
+            <div class="card-body">
+                <form class="row g-3" action="{{ url_for('add_block') }}" method="post">
+                    <div class="col-md-6">
+                        <label for="ip" class="form-label">IP Address</label>
+                        <input type="text" class="form-control" id="ip" name="ip" placeholder="Enter IP address" required pattern="^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$">
+                        <div class="form-text">Enter a valid IPv4 address (e.g., 192.168.1.1)</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="duration" class="form-label">Duration (minutes)</label>
+                        <input type="number" class="form-control" id="duration" name="duration" value="60" min="1">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-danger w-100">Block IP</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Blocked IPs Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-shield text-white">
+                <h5><i class="fa fa-ban me-2"></i>Currently Blocked IPs</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>IP Address</th>
+                                <th>Blocked At</th>
+                                <th>Expires At</th>
+                                <th>Block Count</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for block in blocks %}
+                            <tr>
+                                <td><span class="fw-bold">{{ block['ip'] }}</span></td>
+                                <td class="timestamp">{{ block['block_timestamp'] }}</td>
+                                <td class="timestamp">{{ block['expiry_timestamp'] }}</td>
+                                <td><span class="badge bg-secondary">{{ block['block_count'] }}</span></td>
+                                <td>
+                                    {% if block['ip'] in firewall_blocks %}
+                                    <span class="badge bg-danger status-badge">Active</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark status-badge">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <form action="{{ url_for('remove_block', ip=block['ip']) }}" method="post" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger action-btn">
+                                            <i class="fa fa-times"></i> Unblock
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center">No blocked IPs</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Login Attempts Card -->
+        <div class="card">
+            <div class="card-header bg-shield text-white">
+                <h5><i class="fa fa-history me-2"></i>Recent Failed Login Attempts</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>IP Address</th>
+                                <th>Timestamp</th>
+                                <th>Details</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attempt in attempts %}
+                            <tr>
+                                <td><span class="fw-bold">{{ attempt['ip'] }}</span></td>
+                                <td class="timestamp">{{ attempt['timestamp'] }}</td>
+                                <td class="details-cell" title="{{ attempt['details'] }}">{{ attempt['details'] }}</td>
+                                <td>
+                                    <form action="{{ url_for('add_block') }}" method="post" style="display:inline;">
+                                        <input type="hidden" name="ip" value="{{ attempt['ip'] }}">
+                                        <input type="hidden" name="duration" value="60">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger action-btn">
+                                            <i class="fa fa-ban"></i> Block
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center">No recent login attempts</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer text-center">
+            <p>AutoShield Intrusion Prevention System</p>
+        </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function() {
+
+            setTimeout(function() {
+                var alerts = document.querySelectorAll('.alert');
+                alerts.forEach(function(alert) {
+                    var bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
+            
+            // Confirm before unblocking
+            var unblockForms = document.querySelectorAll('form[action^="/unblock/"]');
+            unblockForms.forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    var ip = this.getAttribute('action').split('/').pop();
+                    if (!confirm('Are you sure you want to unblock IP ' + ip + '?')) {
+                        e.preventDefault();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
