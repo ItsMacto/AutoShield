@@ -224,9 +224,8 @@ class Logger:
                     FROM blocks
                     GROUP BY ip
                 ) m ON b.ip = m.ip AND b.id = m.max_id
-                WHERE b.expiry_timestamp > ?
+                WHERE b.expiry_timestamp <= ?
             ''', (now,))
-            
             blocks = [(row[0], datetime.fromisoformat(row[1])) for row in cursor.fetchall()]
             
         return blocks
